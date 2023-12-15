@@ -88,6 +88,18 @@ impl eframe::App for EguiSample {
                 }
             }
         });
+        if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
+            if self.frame_idx + 1 < self.frames.len() {
+                self.frame_idx += 1;
+            }
+            ctx.request_repaint();
+        }
+        if ctx.input(|i| i.key_pressed(Key::ArrowLeft)) {
+            if self.frame_idx > 0 {
+                self.frame_idx -= 1;
+            }
+            ctx.request_repaint();
+        }
     }
 }
 
