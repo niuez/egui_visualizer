@@ -1,6 +1,8 @@
 mod parser;
+mod transform;
 
 use eframe::{egui::*};
+use epaint::*;
 
 use parser::PaintFrame;
 
@@ -12,7 +14,7 @@ pub struct EguiSample {
 impl EguiSample {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self {
-            frame: PaintFrame::parse("r (100, 100) (200, 200) {{rect}}\nr (0, 0) (50, 50) {{rect2}}\n")
+            frame: PaintFrame::parse("# (-20, -20) (300, 300)\nr (100, 100) (200, 200) {{rect}}\nr (0, 0) (50, 50) {{rect2}}\n")
                 .map(|(s, f)| { println!("{}", s); f })
                 .unwrap_or_default(),
             msg: String::new(),
@@ -29,21 +31,31 @@ impl eframe::App for EguiSample {
         });
 
         CentralPanel::default().show(ctx, |ui| {
+            let ui_size = ui.available_size_before_wrap();
+            let fr_size = self.frame.rect.size();
+            let max_mul = {
+                let xp = ui_size.x / fr_size.x;
+                let yp = ui_size.y / fr_size.y;
+                if xp > yp { yp } else { xp }
+            };
             let (mut response, painter) =
-                ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
-            println!("{:?}", painter.clip_rect());
+                ui.allocate_painter(fr_size * max_mul, Sense::hover());
+            println!("p {:?}", painter.clip_rect());
+            println!("r {:?}", response.rect);
 
             let to_screen = emath::RectTransform::from_to(
-                painter.clip_rect(),
+                self.frame.rect,
                 response.rect,
                 );
             let from_screen = to_screen.inverse();
 
             let shapes: Vec<_> = self.frame.elems.iter()
-                .map(|e| e.shape.clone())
+                .filter_map(|e| {
+                    transform::shape_transform(e.shape.clone(), &to_screen)
+                })
                 .collect();
             painter.extend(shapes);
-            //painter.rect(painter.clip_rect() * 0.99, 0.0, Color32::TRANSPARENT, Stroke::new(1.0, Color32::BLACK));
+            painter.rect(painter.clip_rect() * 0.99, 0.0, Color32::TRANSPARENT, Stroke::new(1.0, Color32::BLACK));
 
             self.msg = String::new();
             if let Some(pointer_pos) = response.hover_pos() {

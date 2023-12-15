@@ -45,23 +45,34 @@ pub struct FrameElement {
 #[derive(Debug)]
 pub struct PaintFrame {
     pub elems: Vec<FrameElement>,
+    pub rect: Rect,
 }
 
 impl Default for PaintFrame {
     fn default() -> Self {
-        PaintFrame { elems: Vec::new() }
+        PaintFrame {
+            elems: Vec::new(),
+            rect: Rect::NOTHING,
+        }
     }
 }
 
 impl PaintFrame {
     pub fn parse(s: &str) -> IResult<&str, Self> {
+        let (s, (_, _, p1, _, p2, _, _)) = tuple((
+                tag("#"), space1, parse_pos2, space1, parse_pos2, space0, newline
+        ))(s)?;
         let (s, elems) = many0(
             map(
                 tuple(( parse_element, space0, newline)),
                 |(e, _, _)| e
             )
         )(s)?;
-        Ok(( s, PaintFrame { elems } ))
+        let frame = PaintFrame {
+            elems,
+            rect: Rect::from_two_pos(p1, p2),
+        };
+        Ok(( s, frame ))
     }
 }
 
