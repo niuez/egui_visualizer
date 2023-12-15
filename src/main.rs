@@ -18,7 +18,7 @@ impl EguiSample {
         Self {
             frame_idx: 0,
             paint_str: format!("# (-20, -20) (250, 300)\nr (100, 100) (200, 200) {{{{rect}}}}\nr (0, 0) (50, 50) {{{{rect2}}}}\n"),
-            frames: PaintFrame::multi_parse("# (-20, -20) (250, 300)\nr (100, 100) (200, 200) {{{{rect}}}}\nr (0, 0) (50, 50) {{{{rect2}}}}\n")
+            frames: PaintFrame::multi_parse("# (-20, -20) (250, 300)\nr (100, 100) (200, 200) {{rect}}\nr (0, 0) (50, 50) {{rect2}}\n")
                 .map(|(s, f)| { println!("{}", s); f })
                 .unwrap_or_default(),
             msg: String::new(),
