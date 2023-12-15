@@ -58,6 +58,10 @@ impl Default for PaintFrame {
 }
 
 impl PaintFrame {
+    pub fn multi_parse(s: &str) -> IResult<&str, Vec<Self>> {
+        let (s, res) = many0(Self::parse)(s)?;
+        Ok(( s, res ))
+    }
     pub fn parse(s: &str) -> IResult<&str, Self> {
         let (s, (_, _, p1, _, p2, _, _)) = tuple((
                 tag("#"), space1, parse_pos2, space1, parse_pos2, space0, newline
