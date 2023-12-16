@@ -7,7 +7,7 @@
 
 int main() {
   std::mt19937 mt(768);
-  int N = 100;
+  int N = 20;
   std::vector<std::pair<float, float>> v(N);
   const float MAX_X = 20;
   for(int i = 0; i < N; i++) {
