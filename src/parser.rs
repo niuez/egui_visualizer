@@ -1,3 +1,4 @@
+use eframe::emath::RectTransform;
 use eframe::epaint::RectShape;
 use nom::character::complete::*;
 use nom::combinator::*;
@@ -12,13 +13,34 @@ use eframe::egui::*;
 #[derive(Debug)]
 pub enum HoverCondition {
     Rect(Rect),
+    Path(Vec<Pos2>),
 }
 
 impl HoverCondition {
-    pub fn check(&self, p: Pos2) -> bool {
+    pub fn check(&self, p: Pos2, to_screen: &RectTransform) -> bool {
         match *self {
-            Self::Rect(rect) => {
-                rect.contains(p)
+            Self::Rect(ref rect) => {
+                Rect::from_min_max(to_screen * rect.min, to_screen * rect.max).contains(p)
+            }
+            Self::Path(ref path) => {
+                let mut ok = false;
+                for i in 1..path.len() {
+                    let a1 = to_screen * path[i - 1];
+                    let a2 = to_screen * path[i];
+                    let dist = 
+                        if (a2 - a1).dot(p - a1) < 0.0 {
+                            (p - a1).length()
+                        }
+                        else if (a1 - a2).dot(p - a2) < 0.0 {
+                            (p - a2).length()
+                        }
+                        else {
+                            let r = a1 + (a2 - a1).dot(p - a1) / (a2 - a1).length_sq() * (a2 - a1);
+                            (r - p).length()
+                        };
+                    ok |= dist < 10.0;
+                }
+                ok
             }
         }
     }
@@ -31,8 +53,8 @@ pub struct Hover {
 }
 
 impl Hover {
-    pub fn check(&self, p: Pos2) -> bool {
-        self.hover_cond.check(p)
+    pub fn check(&self, p: Pos2, to_screen: &RectTransform) -> bool {
+        self.hover_cond.check(p, to_screen)
     }
 }
 
@@ -132,8 +154,8 @@ fn parse_vec_pos2(s: &str) -> IResult<&str, Vec<Pos2>> {
 fn parse_path(s: &str) -> IResult<&str, FrameElement> {
     let (s, (_, _, vp, _, msg)) = tuple(( tag("p"), space1, parse_vec_pos2, space1, opt(parsemsg) ))(s)?;
     let elem = FrameElement {
-        shape: Shape::line(vp, Stroke::new(1.0, Color32::BLACK)),
-        hover: None,
+        shape: Shape::line(vp.clone(), Stroke::new(1.0, Color32::BLACK)),
+        hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Path(vp) })
     };
     Ok(( s, elem ))
 }

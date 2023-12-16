@@ -18,6 +18,12 @@ int main() {
   std::vector<int> perm(N);
   std::iota(perm.begin(), perm.end(), 0);
 
+  auto dist = [&](int i, int j) {
+    float x = v[i].first - v[j].first;
+    float y = v[i].second - v[j].second;
+    return std::sqrt(x * x + y * y);
+  };
+
   auto draw = [&]() {
     using frame::pos2;
     std::cout << frame::new_frame(pos2(-1, -1), pos2(MAX_X + 1, MAX_X + 1));
@@ -27,6 +33,7 @@ int main() {
       frame::path path;
       path.add(p);
       path.add(q);
+      path.msg = std::to_string(dist(perm[i], perm[(i + 1) % N]));
       std::cout << path;
     }
     for(int i = 0; i < v.size(); i++) {
@@ -41,11 +48,6 @@ int main() {
   };
   draw();
 
-  auto dist = [&](int i, int j) {
-    float x = v[i].first - v[j].first;
-    float y = v[i].second - v[j].second;
-    return std::sqrt(x * x + y * y);
-  };
 
   auto sum = [&]() {
     float ans = 0;

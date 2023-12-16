@@ -79,9 +79,8 @@ impl eframe::App for EguiSample {
 
             self.msg = String::new();
             if let Some(pointer_pos) = response.hover_pos() {
-                let canvas_pos = from_screen * pointer_pos;
                 for h in frame.elems.iter().filter_map(|e| e.hover.as_ref()) {
-                    if h.check(canvas_pos) {
+                    if h.check(pointer_pos, &to_screen) {
                         self.msg = h.msg.clone();
                         response.mark_changed();
                     }
