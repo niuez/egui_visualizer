@@ -152,9 +152,9 @@ fn parse_vec_pos2(s: &str) -> IResult<&str, Vec<Pos2>> {
 }
 
 fn parse_path(s: &str) -> IResult<&str, FrameElement> {
-    let (s, (_, _, vp, _, msg)) = tuple(( tag("p "), space0, parse_vec_pos2, space0, opt(parsemsg) ))(s)?;
+    let (s, (_, _, vp, _, c, _, msg)) = tuple(( tag("p "), space0, parse_vec_pos2, space0, opt(parse_color), space0, opt(parsemsg) ))(s)?;
     let elem = FrameElement {
-        shape: Shape::line(vp.clone(), Stroke::new(1.0, Color32::BLACK)),
+        shape: Shape::line(vp.clone(), Stroke::new(1.0, c.unwrap_or(Color32::BLACK))),
         hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Path(vp) })
     };
     Ok(( s, elem ))
