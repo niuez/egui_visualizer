@@ -75,14 +75,19 @@ impl eframe::App for EguiSample {
                 })
                 .collect();
             painter.extend(shapes);
-            painter.rect(painter.clip_rect() * 0.99, 0.0, Color32::TRANSPARENT, Stroke::new(1.0, Color32::BLACK));
 
             self.msg = String::new();
             if let Some(pointer_pos) = response.hover_pos() {
-                for h in frame.elems.iter().filter_map(|e| e.hover.as_ref()) {
+                for h in frame.elems.iter().rev().filter_map(|e| e.hover.as_ref()) {
                     if h.check(pointer_pos, &to_screen) {
                         self.msg = h.msg.clone();
+                        
+                        let gallary = painter.layout_no_wrap(self.msg.clone(), FontId::proportional(8.0), Color32::BLACK);
+                        let rect = gallary.rect.clone();
+                        painter.rect_filled(Rect::from_min_max(rect.min + (pointer_pos - rect.max), pointer_pos), 0.0, Color32::WHITE);
+                        painter.galley((pointer_pos - rect.max).to_pos2(), gallary);
                         response.mark_changed();
+                        break;
                     }
                 }
             }

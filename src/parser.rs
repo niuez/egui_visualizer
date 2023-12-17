@@ -1,3 +1,6 @@
+pub mod color;
+use color::*;
+
 use eframe::emath::RectTransform;
 use eframe::epaint::RectShape;
 use nom::character::complete::*;
@@ -28,11 +31,8 @@ impl HoverCondition {
                     let a1 = to_screen * path[i - 1];
                     let a2 = to_screen * path[i];
                     let dist = 
-                        if (a2 - a1).dot(p - a1) < 0.0 {
-                            (p - a1).length()
-                        }
-                        else if (a1 - a2).dot(p - a2) < 0.0 {
-                            (p - a2).length()
+                        if (a2 - a1).dot(p - a1) < 0.0 || (a1 - a2).dot(p - a2) < 0.0 {
+                            std::f32::INFINITY
                         }
                         else {
                             let r = a1 + (a2 - a1).dot(p - a1) / (a2 - a1).length_sq() * (a2 - a1);
@@ -86,7 +86,7 @@ impl PaintFrame {
     }
     pub fn parse(s: &str) -> IResult<&str, Self> {
         let (s, (_, _, p1, _, p2, _, _)) = tuple((
-                tag("#"), space1, parse_pos2, space1, parse_pos2, space0, newline
+                tag("# "), space0, parse_pos2, space0, parse_pos2, space0, newline
         ))(s)?;
         let (s, elems) = many0(
             map(
@@ -152,7 +152,7 @@ fn parse_vec_pos2(s: &str) -> IResult<&str, Vec<Pos2>> {
 }
 
 fn parse_path(s: &str) -> IResult<&str, FrameElement> {
-    let (s, (_, _, vp, _, msg)) = tuple(( tag("p"), space1, parse_vec_pos2, space1, opt(parsemsg) ))(s)?;
+    let (s, (_, _, vp, _, msg)) = tuple(( tag("p "), space0, parse_vec_pos2, space0, opt(parsemsg) ))(s)?;
     let elem = FrameElement {
         shape: Shape::line(vp.clone(), Stroke::new(1.0, Color32::BLACK)),
         hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Path(vp) })
@@ -161,10 +161,20 @@ fn parse_path(s: &str) -> IResult<&str, FrameElement> {
 }
 
 fn parse_rect(s: &str) -> IResult<&str, FrameElement> {
-    let (s, (_, _, p1, _, p2, _, msg)) = tuple(( tag("r"), space1, parse_pos2, space1, parse_pos2, space1, opt(parsemsg) ))(s)?;
+    let (s, (_, _, p1, _, p2, _, msg)) = tuple(( tag("r"), space0, parse_pos2, space0, parse_pos2, space0, opt(parsemsg) ))(s)?;
     let rect = Rect::from_two_pos(p1, p2);
     let elem = FrameElement {
         shape: Shape::Rect(RectShape::new(rect.clone(), 0.0, Color32::TRANSPARENT, Stroke::new(1.0, Color32::BLACK))),
+        hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Rect(rect.clone()) })
+    };
+    Ok(( s, elem ))
+}
+
+fn parse_rect_fill(s: &str) -> IResult<&str, FrameElement> {
+    let (s, (_, _, p1, _, p2, _, c, _, msg)) = tuple(( tag("rf"), space0, parse_pos2, space0, parse_pos2, space0, parse_color, space0, opt(parsemsg) ))(s)?;
+    let rect = Rect::from_two_pos(p1, p2);
+    let elem = FrameElement {
+        shape: Shape::Rect(RectShape::new(rect.clone(), 0.0, c, Stroke::NONE)),
         hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Rect(rect.clone()) })
     };
     Ok(( s, elem ))
@@ -174,6 +184,7 @@ fn parse_element(s: &str) -> IResult<&str, FrameElement> {
     let (s, e) = alt((
             parse_path,
             parse_rect,
+            parse_rect_fill,
     ))(s)?;
     Ok(( s, e ))
 }

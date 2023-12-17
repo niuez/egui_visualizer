@@ -20,13 +20,29 @@ namespace frame {
     new_frame(pos2 min, pos2 max): min(min), max(max) {}
   };
 
-
   std::ostream& operator<<(std::ostream& os, const new_frame& f) {
-    return os << "# " << f.min << " " << f.max << std::endl;
+    return os << "# " << f.min << " " << f.max;
+  }
+
+  struct message {
+    std::string msg;
+    message(std::string m = ""): msg(m) {}
+  };
+
+  std::ostream& operator<<(std::ostream& os, const message& msg) {
+    return os << "{{" << msg.msg << "}}";
+  }
+
+  struct tag_color {
+    int idx;
+    tag_color(int i): idx(i) {}
+  };
+
+  std::ostream& operator<<(std::ostream& os, const tag_color& c) {
+    return os << "tag(" << c.idx << ")";
   }
 
   struct path {
-    std::string msg;
     std::vector<pos2> ps;
     void add(pos2 p) {
       ps.push_back(p);
@@ -38,17 +54,16 @@ namespace frame {
     for(int i = 0; i < f.ps.size(); i++) {
       os << f.ps[i] << ",]"[i + 1 == f.ps.size()];
     }
-    return os << " " << "{{" << f.msg << "}}" << std::endl;
+    return os;
   }
 
   struct rect {
-    std::string msg;
     pos2 p1;
     pos2 p2;
   };
 
   std::ostream& operator<<(std::ostream& os, const rect& f) {
-    return os << "r " << f.p1 << " " << f.p2 << " " << "{{" << f.msg << "}}" << std::endl;
+    return os << "r " << f.p1 << " " << f.p2;
   }
 }
 

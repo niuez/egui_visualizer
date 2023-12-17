@@ -26,24 +26,24 @@ int main() {
 
   auto draw = [&]() {
     using frame::pos2;
-    std::cout << frame::new_frame(pos2(-1, -1), pos2(MAX_X + 1, MAX_X + 1));
+    std::cout << frame::new_frame(pos2(-1, -1), pos2(MAX_X + 1, MAX_X + 1)) << std::endl;
     for(int i = 0; i < perm.size(); i++) {
       pos2 p(v[perm[i]].first, v[perm[i]].second);
       pos2 q(v[perm[(i + 1) % N]].first, v[perm[(i + 1) % N]].second);
       frame::path path;
       path.add(p);
       path.add(q);
-      path.msg = std::to_string(dist(perm[i], perm[(i + 1) % N]));
-      std::cout << path;
+      std::cout << path << frame::message(std::to_string(dist(perm[i], perm[(i + 1) % N]))) << std::endl;
     }
     for(int i = 0; i < v.size(); i++) {
       pos2 p(v[i].first, v[i].second);
       float m = 0.1;
       std::cout << frame::rect {
-        .msg = std::to_string(i),
-          .p1 = pos2(p.x - m, p.y - m),
-          .p2 = pos2(p.x + m, p.y + m),
-      };
+        .p1 = pos2(p.x - m, p.y - m),
+        .p2 = pos2(p.x + m, p.y + m),
+        }
+        //<< frame::tag_color(i)
+        << frame::message(std::to_string(i)) << std::endl;
     }
   };
   draw();
