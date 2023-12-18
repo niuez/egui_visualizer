@@ -11,16 +11,19 @@ use eframe::egui::*;
 
 const PHI_INV: f32 = 0.618033988749895;
 
+// https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
 pub fn parse_tag_color(s: &str) -> IResult<&str, Color32> {
-    let (s, (_, _, _, _, idx, _, _)) = tuple((
+    let (ss, (_, _, _, _, idx, _, _)) = tuple((
             tag("tag"), space0, tag("("), space0,
             nom::character::complete::u64,
             space0, tag(")")
     ))(s)?;
-    let h = PHI_INV * idx as f32;
+    let h = PHI_INV * idx as f32 * 17.0;
+    let s = PHI_INV * idx as f32 * 11.0;
     let h = h - h.floor();
-    let [r, g, b] = rgb_from_hsv((h, 0.5, 0.95));
-    Ok((s, Rgba::from_rgb(r, g, b).into()))
+    let s = s - s.floor();
+    let [r, g, b] = rgb_from_hsv((h, s * (1.0 - 0.25) + 0.25, 0.95));
+    Ok((ss, Rgba::from_rgb(r, g, b).into()))
 }
 
 pub fn parse_none_color(s: &str) -> IResult<&str, Color32> {

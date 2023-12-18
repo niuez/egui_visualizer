@@ -161,10 +161,10 @@ fn parse_path(s: &str) -> IResult<&str, FrameElement> {
 }
 
 fn parse_rect(s: &str) -> IResult<&str, FrameElement> {
-    let (s, (_, _, p1, _, p2, _, msg)) = tuple(( tag("r"), space0, parse_pos2, space0, parse_pos2, space0, opt(parsemsg) ))(s)?;
+    let (s, (_, _, p1, _, p2, _, f, _, c, _, msg)) = tuple(( tag("r"), space0, parse_pos2, space0, parse_pos2, space0, opt(parse_color), space0, opt(parse_color), space0, opt(parsemsg) ))(s)?;
     let rect = Rect::from_two_pos(p1, p2);
     let elem = FrameElement {
-        shape: Shape::Rect(RectShape::new(rect.clone(), 0.0, Color32::TRANSPARENT, Stroke::new(1.0, Color32::BLACK))),
+        shape: Shape::Rect(RectShape::new(rect.clone(), 0.0, f.unwrap_or(Color32::TRANSPARENT), Stroke::new(1.0, c.unwrap_or(Color32::BLACK)))),
         hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Rect(rect.clone()) })
     };
     Ok(( s, elem ))

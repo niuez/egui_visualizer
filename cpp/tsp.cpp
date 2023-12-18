@@ -7,7 +7,7 @@
 
 int main() {
   std::mt19937 mt(768);
-  int N = 200;
+  int N = 50;
   std::vector<std::pair<float, float>> v(N);
   const float MAX_X = 20;
   for(int i = 0; i < N; i++) {
@@ -33,7 +33,7 @@ int main() {
       frame::path path;
       path.add(p);
       path.add(q);
-      std::cout << path << "turbo(" << dist(perm[i], perm[(i + 1) % N]) / (MAX_X * 1.4) << ")" << frame::message(std::to_string(dist(perm[i], perm[(i + 1) % N]))) << std::endl;
+      std::cout << path << frame::color::turbo(dist(perm[i], perm[(i + 1) % N]) / (MAX_X * 1.4)) << frame::message(std::to_string(dist(perm[i], perm[(i + 1) % N]))) << std::endl;
     }
     for(int i = 0; i < v.size(); i++) {
       pos2 p(v[i].first, v[i].second);
@@ -42,6 +42,8 @@ int main() {
         .p1 = pos2(p.x - m, p.y - m),
         .p2 = pos2(p.x + m, p.y + m),
         }
+        << frame::color::tag(i)
+        << frame::color::none
         //<< frame::tag_color(i)
         << frame::message(std::to_string(i)) << std::endl;
     }

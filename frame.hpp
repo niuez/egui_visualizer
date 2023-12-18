@@ -33,13 +33,41 @@ namespace frame {
     return os << "{{" << msg.msg << "}}";
   }
 
-  struct tag_color {
-    int idx;
-    tag_color(int i): idx(i) {}
-  };
+  namespace color {
 
-  std::ostream& operator<<(std::ostream& os, const tag_color& c) {
-    return os << "tag(" << c.idx << ")";
+    struct named {
+      std::string s;
+      named(std::string&& s): s(std::forward<std::string>(s)) {}
+    };
+
+    std::ostream& operator<<(std::ostream& os, const named& c) {
+      return os << "named(" << c.s << ")";
+    }
+
+    struct tag {
+      int idx;
+      tag(int i): idx(i) {}
+    };
+
+    std::ostream& operator<<(std::ostream& os, const tag& c) {
+      return os << "tag(" << c.idx << ")";
+    }
+    
+    template<const char* name>
+    struct func {
+      float t;
+      func(float t): t(t) {}
+    };
+
+    template<const char* name>
+    std::ostream& operator<<(std::ostream& os, const func<name>& c) {
+      return os << name << "(" << c.t << ")";
+    }
+
+    static const char turbo_str[] = "turbo";
+    using turbo = func<turbo_str>;
+
+    static const std::string none("none()");
   }
 
   struct path {
