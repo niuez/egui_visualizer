@@ -52,7 +52,7 @@ impl eframe::App for EguiSample {
                     let text_event = ui.add(TextEdit::multiline(&mut self.paint_str).desired_width(f32::INFINITY));
                     if text_event.changed() {
                         self.frames = PaintFrame::multi_parse(&self.paint_str)
-                            .map(|(_s, f)| f)
+                            .map(|(s, f)| { println!("{}", s); f })
                             .unwrap_or_default();
                         self.frame_idx = 0;
                         if 0 < self.frames.len() {
@@ -73,11 +73,14 @@ impl eframe::App for EguiSample {
                 if xp > yp { yp } else { xp }
             };
             let (mut response, painter) =
-                ui.allocate_painter(fr_size * max_mul, Sense::drag());
+                ui.allocate_painter(ui_size, Sense::drag());
+                //ui.allocate_painter(fr_size * max_mul, Sense::drag());
 
             let to_screen = emath::RectTransform::from_to(
                 self.frame_rect,
-                response.rect,
+                Rect::from_center_size(response.rect.center(), fr_size * max_mul),
+                //Rect::from_min_max(Pos2::ZERO, (fr_size * max_mul).to_pos2()),
+                //response.rect,
                 );
             let from_screen = to_screen.inverse();
 
@@ -91,6 +94,16 @@ impl eframe::App for EguiSample {
 
             self.msg = String::new();
             if let Some(pointer_pos) = response.hover_pos() {
+                ctx.input(|i| {
+                    let zd = i.zoom_delta();
+                    if zd != 1.0 {
+                        let p = from_screen * pointer_pos;
+                        self.frame_rect = Rect::from_min_max(
+                            p + ((self.frame_rect.min - p) / zd),
+                            p + ((self.frame_rect.max - p) / zd),
+                        );
+                    }
+                });
                 for h in frame.elems.iter().rev().filter_map(|e| e.hover.as_ref()) {
                     if h.check(pointer_pos, &to_screen) {
                         response = response.on_hover_text_at_pointer(&h.msg.clone());
@@ -116,12 +129,6 @@ impl eframe::App for EguiSample {
                 self.drag_pos = None;
             }
             self.msg = format!("{:?}", self.drag_pos);
-        });
-        ctx.input(|i| {
-            let zd = i.zoom_delta();
-            if zd != 1.0 {
-                self.frame_rect = self.frame_rect / zd;
-            }
         });
         if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
             if self.frame_idx + 1 < self.frames.len() {
