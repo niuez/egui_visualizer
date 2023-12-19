@@ -11,6 +11,8 @@ pub struct EguiSample {
     paint_str: String,
     frames: Vec<PaintFrame>,
     msg: String,
+    drag_pos: Option<Pos2>,
+    frame_rect: Rect,
 }
 
 impl EguiSample {
@@ -22,6 +24,8 @@ impl EguiSample {
                 .map(|(s, f)| { println!("{}", s); f })
                 .unwrap_or_default(),
             msg: String::new(),
+            drag_pos: None,
+            frame_rect: Rect::from_min_max(pos2(0.0, 0.0), pos2(100.0, 100.0)),
         }
     }
 }
@@ -36,6 +40,10 @@ impl eframe::App for EguiSample {
                     0i32..=((std::cmp::max(self.frames.len(), 1) - 1) as i32)
             ));
             self.frame_idx = idx_i32 as usize;
+
+            if ui.button("reset view").clicked() && self.frame_idx < self.frames.len() {
+                self.frame_rect = self.frames[self.frame_idx].rect;
+            }
                     
             ui.label(format!("{}", self.msg));
 
@@ -44,13 +52,17 @@ impl eframe::App for EguiSample {
                     let text_event = ui.add(TextEdit::multiline(&mut self.paint_str).desired_width(f32::INFINITY));
                     if text_event.changed() {
                         self.frames = PaintFrame::multi_parse(&self.paint_str)
-                            .map(|(s, f)| f)
+                            .map(|(_s, f)| f)
                             .unwrap_or_default();
+                        self.frame_idx = 0;
+                        if 0 < self.frames.len() {
+                            self.frame_rect = self.frames[0].rect.clone();
+                        }
                     }
                 });
         });
 
-        CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().frame(Frame::none().fill(Color32::WHITE)).show(ctx, |ui| {
             let default_frame = PaintFrame::default();
             let frame = if self.frame_idx < self.frames.len() { &self.frames[self.frame_idx] } else { &default_frame };
             let ui_size = ui.available_size_before_wrap();
@@ -61,10 +73,10 @@ impl eframe::App for EguiSample {
                 if xp > yp { yp } else { xp }
             };
             let (mut response, painter) =
-                ui.allocate_painter(fr_size * max_mul, Sense::hover());
+                ui.allocate_painter(fr_size * max_mul, Sense::drag());
 
             let to_screen = emath::RectTransform::from_to(
-                frame.rect,
+                self.frame_rect,
                 response.rect,
                 );
             let from_screen = to_screen.inverse();
@@ -74,14 +86,14 @@ impl eframe::App for EguiSample {
                     transform::shape_transform(e.shape.clone(), &to_screen)
                 })
                 .collect();
+            //painter.rect_filled(painter.clip_rect(), 0.0, Color32::WHITE);
             painter.extend(shapes);
 
             self.msg = String::new();
             if let Some(pointer_pos) = response.hover_pos() {
                 for h in frame.elems.iter().rev().filter_map(|e| e.hover.as_ref()) {
                     if h.check(pointer_pos, &to_screen) {
-                        self.msg = h.msg.clone();
-                        response.on_hover_text_at_pointer(&self.msg);
+                        response = response.on_hover_text_at_pointer(&h.msg.clone());
                         /*
                         let gallary = painter.layout_no_wrap(self.msg.clone(), FontId::proportional(8.0), Color32::BLACK);
                         let rect = gallary.rect.clone();
@@ -92,6 +104,23 @@ impl eframe::App for EguiSample {
                         break;
                     }
                 }
+            }
+
+            if let Some(after) = response.interact_pointer_pos() {
+                if let Some(before) = self.drag_pos.take() {
+                    self.frame_rect.set_center(self.frame_rect.center() - (from_screen * after - from_screen * before));
+                }
+                self.drag_pos = Some(after);
+            }
+            else {
+                self.drag_pos = None;
+            }
+            self.msg = format!("{:?}", self.drag_pos);
+        });
+        ctx.input(|i| {
+            let zd = i.zoom_delta();
+            if zd != 1.0 {
+                self.frame_rect = self.frame_rect / zd;
             }
         });
         if ctx.input(|i| i.key_pressed(Key::ArrowRight)) {
