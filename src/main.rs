@@ -96,11 +96,15 @@ impl eframe::App for EguiSample {
             if let Some(pointer_pos) = response.hover_pos() {
                 ctx.input(|i| {
                     let zd = i.zoom_delta();
-                    if zd != 1.0 {
+                    let (x, y) = 
+                        if i.key_down(Key::Z) { (zd, 1.0) }
+                        else if i.key_down(Key::X) { (1.0, zd) }
+                        else { (zd, zd) };
+                    {
                         let p = from_screen * pointer_pos;
                         self.frame_rect = Rect::from_min_max(
-                            p + ((self.frame_rect.min - p) / zd),
-                            p + ((self.frame_rect.max - p) / zd),
+                            p + ((self.frame_rect.min - p) / x ),
+                            p + ((self.frame_rect.max - p) / y ),
                         );
                     }
                 });
