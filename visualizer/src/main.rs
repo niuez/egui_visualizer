@@ -33,6 +33,7 @@ impl EguiSample {
 impl eframe::App for EguiSample {
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {}       
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        ctx.style_mut(|style| style.interaction.tooltip_delay = 0.0);
         SidePanel::right("here").show(ctx, |ui| {
             let mut idx_i32 = self.frame_idx as i32;
             ui.add(Slider::new(
@@ -155,5 +156,5 @@ fn main() {
         default_theme: eframe::Theme::Light,
         ..eframe::NativeOptions::default()
     };
-    eframe::run_native("egui_sample", options, Box::new(|cc| Box::new(EguiSample::new(cc)))).unwrap();
+    eframe::run_native("egui_sample", options, Box::new(|cc| Ok(Box::new(EguiSample::new(cc))))).unwrap();
 }
