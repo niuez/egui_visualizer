@@ -3,8 +3,7 @@ use visualizer_shapes::*;
 fn main() {
     let frames = Frames::new()
         .add_frame(
-            Frame::new()
-            /*
+            Frame::new(pos(-10.0, -10.0), pos(100.0, 100.0))
             .add_element(
                 Path::from_vertices(vec![pos(10.0, 10.0), pos(90.0, 90.0)])
                     .stroke(Color::new(122, 0, 122), 2.0)
@@ -21,7 +20,6 @@ fn main() {
                     .element()
                     .with_msg("box")
             )
-            */
             .add_element(
                 Circle::new(pos(10.0, 40.0), 10.0)
                     .stroke(Color::new(0, 0, 0), 1.0)

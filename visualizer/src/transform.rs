@@ -16,10 +16,11 @@ pub fn shape_transform(shape: Shape, to_screen: &RectTransform) -> Option<Shape>
             }))
         }
         Shape::Circle(circle) => {
-            Some(Shape::Circle(CircleShape {
+            Some(Shape::Ellipse(EllipseShape {
                 center: to_screen * circle.center,
-                radius: to_screen.scale().length() * circle.radius,
-                ..circle
+                radius: vec2(to_screen.scale().x * circle.radius, to_screen.scale().y * circle.radius),
+                fill: circle.fill,
+                stroke: circle.stroke,
             }))
         }
         _ => unreachable!(),

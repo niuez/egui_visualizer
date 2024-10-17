@@ -1,13 +1,18 @@
 mod parser;
 mod transform;
 
+use std::path::PathBuf;
+
 use eframe::{egui::*};
+use egui_file_dialog::FileDialog;
 use epaint::*;
 
 use parser::PaintFrame;
 
 pub struct EguiSample {
     frame_idx: usize,
+    file_dialog: FileDialog,
+    selected_file: Option<PathBuf>,
     paint_str: String,
     frames: Vec<PaintFrame>,
     msg: String,
@@ -19,9 +24,10 @@ impl EguiSample {
     fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self {
             frame_idx: 0,
+            file_dialog: FileDialog::new(),
+            selected_file: None,
             paint_str: format!("# (-20, -20) (250, 300)\nr (100, 100) (200, 200) {{{{rect}}}}\nr (0, 0) (50, 50) {{{{rect2}}}}\n"),
-            frames: PaintFrame::from_file("./demo.vis")
-                .unwrap_or_default(),
+            frames: vec![],
             msg: String::new(),
             drag_pos: None,
             frame_rect: Rect::from_min_max(pos2(0.0, 0.0), pos2(100.0, 100.0)),
@@ -44,21 +50,33 @@ impl eframe::App for EguiSample {
             if ui.button("reset view").clicked() && self.frame_idx < self.frames.len() {
                 self.frame_rect = self.frames[self.frame_idx].rect;
             }
-                    
-            ui.label(format!("{}", self.msg));
 
-            ScrollArea::vertical()
-                .show(ui, |ui| {
-                    let text_event = ui.add(TextEdit::multiline(&mut self.paint_str).desired_width(f32::INFINITY));
-                    if text_event.changed() {
-                        self.frames = PaintFrame::from_file("./demo.vis")
-                            .unwrap_or_default();
+            if ui.button("select file").clicked() {
+                // Open the file dialog to select a file.
+                self.file_dialog.select_file();
+            }
+            ui.label(format!("selected file: {:?}", self.selected_file));
+
+            // Update the dialog
+            self.file_dialog.update(ctx);
+
+            if let Some(path) = self.file_dialog.take_selected() {
+                self.selected_file = Some(path.to_path_buf());
+                match PaintFrame::from_file(path.as_path()) {
+                    Ok(frames) => {
+                        self.frames = frames;
                         self.frame_idx = 0;
                         if 0 < self.frames.len() {
                             self.frame_rect = self.frames[0].rect.clone();
                         }
                     }
-                });
+                    Err(e) => {
+                        self.msg = format!("{:?}", e);
+                    }
+                }
+            }
+                    
+            ui.label(format!("{}", self.msg));
         });
 
         CentralPanel::default().frame(Frame::none().fill(Color32::WHITE)).show(ctx, |ui| {
@@ -151,8 +169,8 @@ impl eframe::App for EguiSample {
 
 fn main() {
     let options = eframe::NativeOptions {
-        follow_system_theme: false,
-        default_theme: eframe::Theme::Light,
+        //follow_system_theme: false,
+        //default_theme: eframe::Theme::Light,
         ..eframe::NativeOptions::default()
     };
     eframe::run_native("egui_sample", options, Box::new(|cc| Ok(Box::new(EguiSample::new(cc))))).unwrap();

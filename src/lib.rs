@@ -122,12 +122,16 @@ impl Element {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Frame {
     pub elems: Vec<Element>,
+    pub p1: Pos,
+    pub p2: Pos,
 }
 
 impl Frame {
-    pub fn new() -> Self {
+    pub fn new(p1: Pos, p2: Pos) -> Self {
         Self {
             elems: vec![],
+            p1,
+            p2,
         }
     }
     pub fn add_element(mut self, elem: Element) -> Self {

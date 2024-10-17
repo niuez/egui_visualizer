@@ -53,7 +53,7 @@ impl HoverCondition {
             }
             Self::Circle(c, r) => {
                 let v = to_screen * c - p;
-                v.length() <= r * to_screen.scale().length()
+                (v.x / (r * to_screen.scale().x)).powi(2) + (v.y / (r * to_screen.scale().y)).powi(2) <= 1.0
             }
         }
     }
@@ -97,7 +97,7 @@ impl PaintFrame {
         let frames = visualizer_shapes::Frames::decode_from_file(path)?;
         Ok(frames.frames.into_iter().map(|frame| {
             let elems = frame.elems.into_iter().map(|e| {
-                eprintln!("{:?}", e);
+                //eprintln!("{:?}", e);
                 match e.shape {
                     visualizer_shapes::Shape::Path(p) => {
                         let vp = p.vp.into_iter().map(|p| pos2(p.x, p.y)).collect::<Vec<_>>();
@@ -127,7 +127,7 @@ impl PaintFrame {
             }).collect::<Vec<_>>();
             PaintFrame {
                 elems,
-                rect: Rect::from_two_pos(pos2(0.0, 0.0), pos2(100.0, 100.0)),
+                rect: Rect::from_two_pos(pos2(frame.p1.x, frame.p1.y), pos2(frame.p2.x, frame.p2.y)),
             }
         }).collect())
     }
