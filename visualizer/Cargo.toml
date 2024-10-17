@@ -1,5 +1,5 @@
 [package]
-name = "sample"
+name = "visualizer"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,3 +10,5 @@ eframe = "0.28.1"
 nom = "7.1.3"
 color-name = "1.1.0"
 colorous = "1.0.12"
+visualizer_shapes = { path = "../" }
+anyhow = "1.0.89"

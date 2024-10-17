@@ -20,8 +20,7 @@ impl EguiSample {
         Self {
             frame_idx: 0,
             paint_str: format!("# (-20, -20) (250, 300)\nr (100, 100) (200, 200) {{{{rect}}}}\nr (0, 0) (50, 50) {{{{rect2}}}}\n"),
-            frames: PaintFrame::multi_parse("# (-20, -20) (250, 300)\nr (100, 100) (200, 200) {{rect}}\nr (0, 0) (50, 50) {{rect2}}\n")
-                .map(|(s, f)| { println!("{}", s); f })
+            frames: PaintFrame::from_file("./demo.vis")
                 .unwrap_or_default(),
             msg: String::new(),
             drag_pos: None,
@@ -52,8 +51,7 @@ impl eframe::App for EguiSample {
                 .show(ui, |ui| {
                     let text_event = ui.add(TextEdit::multiline(&mut self.paint_str).desired_width(f32::INFINITY));
                     if text_event.changed() {
-                        self.frames = PaintFrame::multi_parse(&self.paint_str)
-                            .map(|(s, f)| { println!("{}", s); f })
+                        self.frames = PaintFrame::from_file("./demo.vis")
                             .unwrap_or_default();
                         self.frame_idx = 0;
                         if 0 < self.frames.len() {
@@ -90,6 +88,7 @@ impl eframe::App for EguiSample {
                     transform::shape_transform(e.shape.clone(), &to_screen)
                 })
                 .collect();
+            //eprintln!("{:?}", shapes);
             //painter.rect_filled(painter.clip_rect(), 0.0, Color32::WHITE);
             painter.extend(shapes);
 

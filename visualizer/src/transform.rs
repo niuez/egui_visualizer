@@ -15,6 +15,13 @@ pub fn shape_transform(shape: Shape, to_screen: &RectTransform) -> Option<Shape>
                 ..rect
             }))
         }
-        _ => None,
+        Shape::Circle(circle) => {
+            Some(Shape::Circle(CircleShape {
+                center: to_screen * circle.center,
+                radius: to_screen.scale().length() * circle.radius,
+                ..circle
+            }))
+        }
+        _ => unreachable!(),
     }
 }

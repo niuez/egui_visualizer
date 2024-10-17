@@ -2,21 +2,15 @@ pub mod color;
 use color::*;
 
 use eframe::emath::RectTransform;
-use eframe::epaint::RectShape;
-use nom::character::complete::*;
-use nom::combinator::*;
-use nom::IResult;
-use nom::bytes::complete::*;
-use nom::sequence::*;
-use nom::number::complete::*;
-use nom::multi::*;
-use nom::branch::alt;
 use eframe::egui::*;
+use eframe::epaint::{CircleShape, PathShape};
 
 #[derive(Debug)]
 pub enum HoverCondition {
     Rect(Rect),
     Path(Vec<Pos2>),
+    ClosedPath(Vec<Pos2>),
+    Circle(Pos2, f32),
 }
 
 impl HoverCondition {
@@ -41,6 +35,25 @@ impl HoverCondition {
                     ok |= dist < 10.0;
                 }
                 ok
+            }
+            Self::ClosedPath(ref path) => {
+                let cross = |p1: Pos2, p2: Pos2, p3: Pos2| {
+                    (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y) < 0.0
+                };
+                let mut ok = false;
+                for i in 0..path.len() {
+                    let b1 = cross(p, to_screen * path[i], to_screen * path[(i + 1) % path.len()]);
+                    let b2 = cross(p, to_screen * path[(i + 1) % path.len()], to_screen * path[(i + 2) % path.len()]);
+                    let b3 = cross(p, to_screen * path[(i + 2) % path.len()], to_screen * path[i]);
+                    if (b1 == b2) && (b2 == b3) {
+                        ok = true;
+                    }
+                }
+                ok
+            }
+            Self::Circle(c, r) => {
+                let v = to_screen * c - p;
+                v.length() <= r * to_screen.scale().length()
             }
         }
     }
@@ -80,111 +93,42 @@ impl Default for PaintFrame {
 }
 
 impl PaintFrame {
-    pub fn multi_parse(s: &str) -> IResult<&str, Vec<Self>> {
-        let (s, res) = many0(Self::parse)(s)?;
-        Ok(( s, res ))
-    }
-    pub fn parse(s: &str) -> IResult<&str, Self> {
-        let (s, (_, _, p1, _, p2, _, _)) = tuple((
-                tag("# "), space0, parse_pos2, space0, parse_pos2, space0, newline
-        ))(s)?;
-        let (s, elems) = many0(
-            map(
-                tuple(( parse_element, space0, newline)),
-                |(e, _, _)| e
-            )
-        )(s)?;
-        let frame = PaintFrame {
-            elems,
-            rect: Rect::from_two_pos(p1, p2),
-        };
-        Ok(( s, frame ))
-    }
-}
-
-enum ParseMsg {
-    Any(char),
-    End,
-}
-
-fn parsemsg_any(s: &str) -> IResult<&str, ParseMsg> {
-    let (s, c) = anychar(s)?;
-    Ok(( s, ParseMsg::Any(c) ))
-}
-fn parsemsg_end(s: &str) -> IResult<&str, ParseMsg> {
-    let (s, _) = tag("}}")(s)?;
-    Ok(( s, ParseMsg::End ))
-}
-
-fn parsemsg(s: &str) -> IResult<&str, String> {
-    let (mut s, _) = tag("{{")(s)?;
-    let mut msg = String::new();
-    loop {
-        let (ss, inline) = alt((parsemsg_end, parsemsg_any,))(s)?;
-        s = ss;
-        match inline {
-            ParseMsg::Any(c) => {
-                msg.push(c);
+    pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Vec<Self>> {
+        let frames = visualizer_shapes::Frames::decode_from_file(path)?;
+        Ok(frames.frames.into_iter().map(|frame| {
+            let elems = frame.elems.into_iter().map(|e| {
+                eprintln!("{:?}", e);
+                match e.shape {
+                    visualizer_shapes::Shape::Path(p) => {
+                        let vp = p.vp.into_iter().map(|p| pos2(p.x, p.y)).collect::<Vec<_>>();
+                        let closed = p.fill.is_some();
+                        FrameElement {
+                            shape: Shape::Path(PathShape {
+                                           points: vp.clone(),
+                                           closed,
+                                           fill: p.fill.map(|f| Color32::from_rgb(f.r, f.g, f.b)).unwrap_or(Color32::TRANSPARENT),
+                                           stroke: Stroke::new(p.stroke.width, Color32::from_rgb(p.stroke.color.r, p.stroke.color.g, p.stroke.color.b)).into(),
+                            }),
+                            hover: e.msg.map(|msg| Hover { msg, hover_cond: if closed { HoverCondition::ClosedPath(vp) } else { HoverCondition::Path(vp) } })
+                        }
+                    }
+                    visualizer_shapes::Shape::Circle(c) => {
+                        FrameElement {
+                            shape: Shape::Circle(CircleShape {
+                                center: pos2(c.center.x, c.center.y),
+                                radius: c.radius,
+                                fill: c.fill.map(|f| Color32::from_rgb(f.r, f.g, f.b)).unwrap_or(Color32::TRANSPARENT),
+                                stroke: c.stroke.map(|s| Stroke::new(s.width, Color32::from_rgb(s.color.r, s.color.g, s.color.b))).unwrap_or(Stroke::default()),
+                            }),
+                            hover: e.msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Circle(pos2(c.center.x, c.center.y), c.radius) })
+                        }
+                    }
+                }
+            }).collect::<Vec<_>>();
+            PaintFrame {
+                elems,
+                rect: Rect::from_two_pos(pos2(0.0, 0.0), pos2(100.0, 100.0)),
             }
-            ParseMsg::End => {
-                break;
-            }
-        }
+        }).collect())
     }
-    Ok(( s, msg ))
-}
-
-fn parse_pos2(s: &str) -> IResult<&str, Pos2> {
-    let (s, (_, _, x, _, _, _, y, _, _))
-        = tuple((tag("("), space0, float, space0, tag(","), space0, float, space0, tag(")")))(s)?;
-    Ok((s, pos2(x, y)))
-}
-
-fn parse_vec_pos2(s: &str) -> IResult<&str, Vec<Pos2>> {
-    let sp = tuple((space0, tag(","), space0));
-    let (s, (_, _, vp, _, _)) =
-        tuple((
-            tag("["), space0,
-            separated_list0(sp, parse_pos2),
-            space0, tag("]")
-        ))(s)?;
-    Ok((s, vp))
-}
-
-fn parse_path(s: &str) -> IResult<&str, FrameElement> {
-    let (s, (_, _, vp, _, c, _, msg)) = tuple(( tag("p "), space0, parse_vec_pos2, space0, opt(parse_color), space0, opt(parsemsg) ))(s)?;
-    let elem = FrameElement {
-        shape: Shape::line(vp.clone(), Stroke::new(1.0, c.unwrap_or(Color32::BLACK))),
-        hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Path(vp) })
-    };
-    Ok(( s, elem ))
-}
-
-fn parse_rect(s: &str) -> IResult<&str, FrameElement> {
-    let (s, (_, _, p1, _, p2, _, f, _, c, _, msg)) = tuple(( tag("r"), space0, parse_pos2, space0, parse_pos2, space0, opt(parse_color), space0, opt(parse_color), space0, opt(parsemsg) ))(s)?;
-    let rect = Rect::from_two_pos(p1, p2);
-    let elem = FrameElement {
-        shape: Shape::Rect(RectShape::new(rect.clone(), 0.0, f.unwrap_or(Color32::TRANSPARENT), Stroke::new(1.0, c.unwrap_or(Color32::BLACK)))),
-        hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Rect(rect.clone()) })
-    };
-    Ok(( s, elem ))
-}
-
-fn parse_rect_fill(s: &str) -> IResult<&str, FrameElement> {
-    let (s, (_, _, p1, _, p2, _, c, _, msg)) = tuple(( tag("rf"), space0, parse_pos2, space0, parse_pos2, space0, parse_color, space0, opt(parsemsg) ))(s)?;
-    let rect = Rect::from_two_pos(p1, p2);
-    let elem = FrameElement {
-        shape: Shape::Rect(RectShape::new(rect.clone(), 0.0, c, Stroke::NONE)),
-        hover: msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Rect(rect.clone()) })
-    };
-    Ok(( s, elem ))
-}
-
-fn parse_element(s: &str) -> IResult<&str, FrameElement> {
-    let (s, e) = alt((
-            parse_path,
-            parse_rect,
-            parse_rect_fill,
-    ))(s)?;
-    Ok(( s, e ))
 }
