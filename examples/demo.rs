@@ -26,7 +26,8 @@ fn main() {
                     .element()
                     .with_msg("circle")
             )
-        );
+        )
+    ;
     frames.encode_to_file("visualizer/demo.vis").unwrap();
 }
 

@@ -7,6 +7,7 @@ fn main() {
             .add_element(
                 Circle::new(pos(i as f32, i as f32), 1.0)
                     .stroke(Color::new(0, 0, 0), 1.0)
+                    .fill(Color::turbo(i as f32 / 100.0))
                     .element()
             );
         frames = frames.add_frame(frame);

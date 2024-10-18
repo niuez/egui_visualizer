@@ -18,6 +18,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "colorous"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f06d1dcee094f7b58bef5c0b6abb4f9dc1cb3638f22113fb0f2c7a7dd1b73bd"
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -78,5 +84,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
+ "colorous",
  "serde",
 ]

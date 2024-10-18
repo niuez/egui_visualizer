@@ -17,9 +17,51 @@ pub struct Color {
     pub b: u8,
 }
 
+const PHI_INV: f32 = 0.618033988749895;
+
+pub fn rgb_from_hsv((h, s, v): (f32, f32, f32)) -> [f32; 3] {
+    #![allow(clippy::many_single_char_names)]
+    let h = (h.fract() + 1.0).fract(); // wrap
+    let s = s.clamp(0.0, 1.0);
+
+    let f = h * 6.0 - (h * 6.0).floor();
+    let p = v * (1.0 - s);
+    let q = v * (1.0 - f * s);
+    let t = v * (1.0 - (1.0 - f) * s);
+
+    match (h * 6.0).floor() as i32 % 6 {
+        0 => [v, t, p],
+        1 => [q, v, p],
+        2 => [p, v, t],
+        3 => [p, q, v],
+        4 => [t, p, v],
+        5 => [v, p, q],
+        _ => unreachable!(),
+    }
+}
+
 impl Color {
     pub fn new(r: u8, g: u8, b: u8) -> Self {
         Color { r, g, b }
+    }
+    pub fn ratio(r: f32, g: f32, b: f32) -> Self {
+        Color {
+            r: (r * 255.0) as u8,
+            g: (g * 255.0) as u8,
+            b: (b * 255.0) as u8,
+        }
+    }
+    pub fn turbo(x: f32) -> Self {
+        let (r, g, b) = colorous::TURBO.eval_continuous(x as f64).as_tuple();
+        Self::new(r, g, b)
+    }
+    pub fn tag(idx: usize) -> Self {
+        let h = PHI_INV * idx as f32 * 17.0;
+        let s = PHI_INV * idx as f32 * 11.0;
+        let h = h - h.floor();
+        let s = s - s.floor();
+        let [r, g, b] = rgb_from_hsv((h, s * (1.0 - 0.25) + 0.25, 0.95));
+        Self::ratio(r, g, b)
     }
 }
 
@@ -84,7 +126,7 @@ impl Circle {
     pub fn new(center: Pos, radius: f32) -> Self {
         Self { center, radius, ..Self::default() }
     }
-    pub fn close(mut self, fill: Color) -> Self {
+    pub fn fill(mut self, fill: Color) -> Self {
         self.fill = Some(fill);
         self
     }
