@@ -9,6 +9,8 @@ use epaint::*;
 
 use parser::PaintFrame;
 
+use crate::parser::ElementKind;
+
 pub struct EguiSample {
     frame_idx: usize,
     file_dialog: FileDialog,
@@ -101,14 +103,23 @@ impl eframe::App for EguiSample {
                 );
             let from_screen = to_screen.inverse();
 
-            let shapes: Vec<_> = frame.elems.iter()
-                .filter_map(|e| {
-                    transform::shape_transform(e.shape.clone(), &to_screen)
-                })
-                .collect();
+            for elem in frame.elems.iter() {
+                match &elem.shape {
+                    ElementKind::Shape(shape) => {
+                        painter.add(transform::shape_transform(shape.clone(), &to_screen).unwrap());
+                    }
+                    ElementKind::Text(text) => {
+                        let galley = painter.layout_no_wrap(text.text.clone(), FontId::proportional(text.size * (to_screen.scale().x * to_screen.scale().y).sqrt()), text.color);
+                        let rect = galley.rect.clone();
+                        //painter.rect_filled(Rect::from_min_max(rect.min + (pointer_pos - rect.max), pointer_pos), 0.0, Color32::WHITE);
+                        painter.galley(to_screen * text.pos - rect.size() / 2.0, galley, Color32::PLACEHOLDER);
+                    }
+                }
+            }
+
             //eprintln!("{:?}", shapes);
             //painter.rect_filled(painter.clip_rect(), 0.0, Color32::WHITE);
-            painter.extend(shapes);
+            //painter.extend(shapes);
 
             self.msg = String::new();
             if let Some(pointer_pos) = response.hover_pos() {

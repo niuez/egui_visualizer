@@ -72,8 +72,22 @@ impl Hover {
 }
 
 #[derive(Debug)]
+pub struct Text {
+    pub text: String,
+    pub pos: Pos2,
+    pub size: f32,
+    pub color: Color32,
+}
+
+#[derive(Debug)]
+pub enum ElementKind {
+    Shape(Shape),
+    Text(Text),
+}
+
+#[derive(Debug)]
 pub struct FrameElement {
-    pub shape: Shape,
+    pub shape: ElementKind,
     pub hover: Option<Hover>,
 }
 
@@ -103,24 +117,35 @@ impl PaintFrame {
                         let vp = p.vp.into_iter().map(|p| pos2(p.x, p.y)).collect::<Vec<_>>();
                         let closed = p.fill.is_some();
                         FrameElement {
-                            shape: Shape::Path(PathShape {
+                            shape: ElementKind::Shape(Shape::Path(PathShape {
                                            points: vp.clone(),
                                            closed,
                                            fill: p.fill.map(|f| Color32::from_rgb(f.r, f.g, f.b)).unwrap_or(Color32::TRANSPARENT),
                                            stroke: Stroke::new(p.stroke.width, Color32::from_rgb(p.stroke.color.r, p.stroke.color.g, p.stroke.color.b)).into(),
-                            }),
+                            })),
                             hover: e.msg.map(|msg| Hover { msg, hover_cond: if closed { HoverCondition::ClosedPath(vp) } else { HoverCondition::Path(vp) } })
                         }
                     }
                     visualizer_shapes::Shape::Circle(c) => {
                         FrameElement {
-                            shape: Shape::Circle(CircleShape {
+                            shape: ElementKind::Shape(Shape::Circle(CircleShape {
                                 center: pos2(c.center.x, c.center.y),
                                 radius: c.radius,
                                 fill: c.fill.map(|f| Color32::from_rgb(f.r, f.g, f.b)).unwrap_or(Color32::TRANSPARENT),
                                 stroke: c.stroke.map(|s| Stroke::new(s.width, Color32::from_rgb(s.color.r, s.color.g, s.color.b))).unwrap_or(Stroke::default()),
-                            }),
+                            })),
                             hover: e.msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Circle(pos2(c.center.x, c.center.y), c.radius) })
+                        }
+                    }
+                    visualizer_shapes::Shape::Text(t) => {
+                        FrameElement {
+                            shape: ElementKind::Text(Text {
+                                text: t.text,
+                                size: t.size,
+                                pos: pos2(t.pos.x, t.pos.y),
+                                color: Color32::from_rgb(t.color.r, t.color.g, t.color.b),
+                            }),
+                            hover: None,
                         }
                     }
                 }

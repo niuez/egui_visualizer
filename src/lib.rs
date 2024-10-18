@@ -142,10 +142,35 @@ impl Circle {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct Text {
+    pub text: String,
+    pub size: f32,
+    pub pos: Pos,
+    pub color: Color,
+}
+
+impl Text {
+    pub fn new<S: Into<String>>(text: S, size: f32, pos: Pos) -> Self {
+        Self { text: text.into(), size, pos, color: Color::new(0, 0, 0) }
+    }
+    pub fn color(mut self, color: Color) -> Self {
+        self.color = color;
+        self
+    }
+    pub fn element(self) -> Element {
+        Element {
+            shape: Shape::Text(self),
+            msg: None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Shape {
     Path(Path),
     Circle(Circle),
+    Text(Text),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
