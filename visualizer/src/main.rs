@@ -46,7 +46,9 @@ impl eframe::App for EguiSample {
             ui.add(Slider::new(
                     &mut idx_i32,
                     0i32..=((std::cmp::max(self.frames.len(), 1) - 1) as i32)
-            ));
+                
+                ).smart_aim(false)
+                );
             self.frame_idx = idx_i32 as usize;
 
             if ui.button("reset view").clicked() && self.frame_idx < self.frames.len() {

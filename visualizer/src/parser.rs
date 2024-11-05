@@ -120,8 +120,8 @@ impl PaintFrame {
                             shape: ElementKind::Shape(Shape::Path(PathShape {
                                            points: vp.clone(),
                                            closed,
-                                           fill: p.fill.map(|f| Color32::from_rgb(f.r, f.g, f.b)).unwrap_or(Color32::TRANSPARENT),
-                                           stroke: Stroke::new(p.stroke.width, Color32::from_rgb(p.stroke.color.r, p.stroke.color.g, p.stroke.color.b)).into(),
+                                           fill: p.fill.map(|f| Color32::from_rgba_unmultiplied(f.r, f.g, f.b, f.a)).unwrap_or(Color32::TRANSPARENT),
+                                           stroke: Stroke::new(p.stroke.width, Color32::from_rgba_unmultiplied(p.stroke.color.r, p.stroke.color.g, p.stroke.color.b, p.stroke.color.a)).into(),
                             })),
                             hover: e.msg.map(|msg| Hover { msg, hover_cond: if closed { HoverCondition::ClosedPath(vp) } else { HoverCondition::Path(vp) } })
                         }
@@ -131,8 +131,8 @@ impl PaintFrame {
                             shape: ElementKind::Shape(Shape::Circle(CircleShape {
                                 center: pos2(c.center.x, c.center.y),
                                 radius: c.radius,
-                                fill: c.fill.map(|f| Color32::from_rgb(f.r, f.g, f.b)).unwrap_or(Color32::TRANSPARENT),
-                                stroke: c.stroke.map(|s| Stroke::new(s.width, Color32::from_rgb(s.color.r, s.color.g, s.color.b))).unwrap_or(Stroke::default()),
+                                fill: c.fill.map(|f| Color32::from_rgba_unmultiplied(f.r, f.g, f.b, f.a)).unwrap_or(Color32::TRANSPARENT),
+                                stroke: c.stroke.map(|s| Stroke::new(s.width, Color32::from_rgba_unmultiplied(s.color.r, s.color.g, s.color.b, s.color.a))).unwrap_or(Stroke::default()),
                             })),
                             hover: e.msg.map(|msg| Hover { msg, hover_cond: HoverCondition::Circle(pos2(c.center.x, c.center.y), c.radius) })
                         }
@@ -143,7 +143,7 @@ impl PaintFrame {
                                 text: t.text,
                                 size: t.size,
                                 pos: pos2(t.pos.x, t.pos.y),
-                                color: Color32::from_rgb(t.color.r, t.color.g, t.color.b),
+                                color: Color32::from_rgba_unmultiplied(t.color.r, t.color.g, t.color.b, t.color.a),
                             }),
                             hover: None,
                         }
