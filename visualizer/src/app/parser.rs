@@ -107,8 +107,7 @@ impl Default for PaintFrame {
 }
 
 impl PaintFrame {
-    pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Vec<Self>> {
-        let frames = visualizer_shapes::Frames::decode_from_file(path)?;
+    fn makeup(frames: visualizer_shapes::Frames) -> anyhow::Result<Vec<Self>> {
         Ok(frames.frames.into_iter().map(|frame| {
             let elems = frame.elems.into_iter().map(|e| {
                 //eprintln!("{:?}", e);
@@ -155,5 +154,13 @@ impl PaintFrame {
                 rect: Rect::from_two_pos(pos2(frame.p1.x, frame.p1.y), pos2(frame.p2.x, frame.p2.y)),
             }
         }).collect())
+    }
+    pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Vec<Self>> {
+        let frames = visualizer_shapes::Frames::decode_from_file(path)?;
+        Self::makeup(frames)
+    }
+    pub fn from_u8s(v: Vec<u8>) -> anyhow::Result<Vec<Self>> {
+        let frames = visualizer_shapes::Frames::decode(v)?;
+        Self::makeup(frames)
     }
 }
